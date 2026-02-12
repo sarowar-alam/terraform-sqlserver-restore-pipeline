@@ -1622,20 +1622,7 @@ Closes #123
 
 ---
 
-## License
-
-This project is licensed under the MIT License - see LICENSE file for details.
-
----
-
 ## Support
-
-### Getting Help
-
-- **Documentation**: This README and inline code comments
-- **Issues**: [GitHub Issues](https://github.com/user-1/automation-repo/issues)
-- **Email**: user-1@company-a.com
-- **Slack**: #infrastructure-automation (internal)
 
 ### Reporting Bugs
 
@@ -1667,5 +1654,10 @@ Use GitHub Issues with:
 
 ---
 
-**Maintained by**: DevOps Team, Company-A  
-**Last Updated**: February 12, 2026
+## 🧑‍💻 Author
+*Md. Sarowar Alam*  
+Lead DevOps Engineer, Hogarth Worldwide  
+📧 Email: sarowar@hotmail.com  
+🔗 LinkedIn: https://www.linkedin.com/in/sarowar/
+
+---
