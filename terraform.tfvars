@@ -1,11 +1,11 @@
 # AWS Configuration
-ec2_instance_role_arn = "YOUR_EC2_INSTANCE_ROLE_ARN"
-terraform_role_arn    = "arn:aws:iam::YOUR_TEST_ACCOUNT_ID:role/restore"
+ec2_instance_role_arn = "arn:aws:iam::222222222222:role/ec2-instance-role"
+terraform_role_arn    = "arn:aws:iam::222222222222:role/terraform-role"
 region      = "us-east-1"
 
 # Security - REQUIRED: Replace with your actual IP
-allowed_ips = ["YOUR_OFFICE_HOME_IP/32"]
-winrm_ips = ["YOUR_GATEWAY_IP/32"]
+allowed_ips = ["203.0.113.0/32"]
+winrm_ips = ["203.0.113.0/32"]
 
 # Networking
 vpc_cidr           = "10.1.0.0/16"

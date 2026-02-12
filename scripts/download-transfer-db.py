@@ -210,7 +210,7 @@ def main():
     parser.add_argument('--dest-prefix', required=True, help='Destination S3 prefix/path')
     
     # Common arguments
-    parser.add_argument('--local-dir', default='C:\\YOUR_REMOTE-DIR\\', help='Local directory for temporary storage')
+    parser.add_argument('--local-dir', default='C:\\DBBackups\\', help='Local directory for temporary storage')
     parser.add_argument('--region', default='us-east-1', help='AWS region')
     parser.add_argument('--no-cleanup', action='store_true', help='Keep local file after upload')
     

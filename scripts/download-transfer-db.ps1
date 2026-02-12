@@ -22,8 +22,8 @@ param(
     [string]$remote_server,
     [string]$username,
     [string]$password,
-    [string]$remote_local_dir = "C:\YOUR_REMOTE-DIR\",
-    [string]$local_dir = "C:\YOUR_REMOTE-DIR\",
+    [string]$remote_local_dir = "C:\DBBackups\",
+    [string]$local_dir = "C:\DBBackups\",
     [string]$region = "us-east-1",
     [switch]$no_cleanup
 )

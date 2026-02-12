@@ -18,7 +18,7 @@ param(
 
 # Convert plain text password to SecureString (handles special characters)
 Write-Host "[INFO] Converting password to SecureString" -ForegroundColor Green
-$passwordFilePath = "Automated-MS-SQL-Backup-Restore-Job\password.txt"
+$passwordFilePath = "sql-backup-restore-automation\password.txt"
 if (-not (Test-Path $passwordFilePath)) {
     throw "Password file not found at: $passwordFilePath"
 }

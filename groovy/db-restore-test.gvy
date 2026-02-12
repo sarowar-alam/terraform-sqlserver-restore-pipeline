@@ -1,7 +1,7 @@
 def DB_CHOICES = [
-    'DB001.Global',
-    'DB002.Global', 
-    'DB003.Global'
+    'Database-A',
+    'Database-B', 
+    'Database-C'
     ]
 
 pipeline {
@@ -28,35 +28,35 @@ pipeline {
         AWS_REGION = 'us-east-1'
         IS_CREATE = false
         IS_DELETE = false        
-        TF_PATH="${WORKSPACE}/Automated-MS-SQL-Backup-Restore-Job/"
+        TF_PATH="${WORKSPACE}/sql-backup-restore-automation/"
         TF_INSTANCE_IP=""
 
-        ADD_TRUSTED_HOSTS = "Automated-MS-SQL-Backup-Restore-Job\\scripts\\add-trusted-host.ps1"
-        REMOVE_TRUSTED_HOSTS = "Automated-MS-SQL-Backup-Restore-Job\\scripts\\remove-trusted-host.ps1"
-        DOWNLOAD_DB_TRANSFER = "Automated-MS-SQL-Backup-Restore-Job\\scripts\\download-transfer-db.py"
-        PASSWORD_FILE = "Automated-MS-SQL-Backup-Restore-Job\\password.txt"
+        ADD_TRUSTED_HOSTS = "sql-backup-restore-automation\\scripts\\add-trusted-host.ps1"
+        REMOVE_TRUSTED_HOSTS = "sql-backup-restore-automation\\scripts\\remove-trusted-host.ps1"
+        DOWNLOAD_DB_TRANSFER = "sql-backup-restore-automation\\scripts\\download-transfer-db.py"
+        PASSWORD_FILE = "sql-backup-restore-automation\\password.txt"
 
-        DOWNLOAD_DB_REMOTE_SERVER = "Automated-MS-SQL-Backup-Restore-Job/scripts/download-s3-backup-remote.ps1"
+        DOWNLOAD_DB_REMOTE_SERVER = "sql-backup-restore-automation/scripts/download-s3-backup-remote.ps1"
         
-        RESTORE_DB_SQL_CMD = "Automated-MS-SQL-Backup-Restore-Job/scripts/restore-db-sqlcmd.ps1"
-        EXECUTE_DB_SQL_CMD = "Automated-MS-SQL-Backup-Restore-Job/scripts/execute-query.ps1"
-        EXECUTE_DB_SQL_CMD_PROD = "Automated-MS-SQL-Backup-Restore-Job/scripts/execute-query-prod.ps1"
+        RESTORE_DB_SQL_CMD = "sql-backup-restore-automation/scripts/restore-db-sqlcmd.ps1"
+        EXECUTE_DB_SQL_CMD = "sql-backup-restore-automation/scripts/execute-query.ps1"
+        EXECUTE_DB_SQL_CMD_PROD = "sql-backup-restore-automation/scripts/execute-query-prod.ps1"
 
-        powershellScriptPath = "Automated-MS-SQL-Backup-Restore-Job/scripts/download-transfer-db.ps1"
+        powershellScriptPath = "sql-backup-restore-automation/scripts/download-transfer-db.ps1"
 
-        PROD_SQL_IP="192.168.1.5"
+        PROD_SQL_IP="10.0.100.50"
 
-        SQL_QUERY_FILE = "Automated-MS-SQL-Backup-Restore-Job/scripts/sql-query.sql"
+        SQL_QUERY_FILE = "sql-backup-restore-automation/scripts/sql-query.sql"
 
         SECURE_PASSWORD = ""
 
-        SOURCE_ROLE_ARN = "arn:aws:iam::YOUR_ACCOUNT_ID:role/restore-rc-mainline"
-        SOURCE_BUCKET = "YOUR_SOURCE_BUCKET_NAME"
-        SOURCE_PREFIX = "YOUR_SOURCE_PREFIX/"
-        DEST_ROLE_ARN = "arn:aws:iam::YOUR_TEST_ACCOUNT_ID:role/restore"
-        DEST_BUCKET = "YOUR_DEST_BUCKET_NAME"
-        DEST_PREFIX = "YOUR_DEST_PREFIX/"
-        REMOTE_LOCAL_DIR = "C:\\YOUR_REMOTE-DIR\\"
+        SOURCE_ROLE_ARN = "arn:aws:iam::111111111111:role/source-account-role"
+        SOURCE_BUCKET = "source-backups-bucket"
+        SOURCE_PREFIX = "database-backups/"
+        DEST_ROLE_ARN = "arn:aws:iam::222222222222:role/dest-account-role"
+        DEST_BUCKET = "dest-backups-bucket"
+        DEST_PREFIX = "restored-backups/"
+        REMOTE_LOCAL_DIR = "C:\\DBBackups\\"
         PYTHON = 'python'
     }
     stages {
@@ -69,7 +69,7 @@ pipeline {
                     def result = powershell(
                         returnStdout: true, 
                         script: '''
-                            & "Automated-MS-SQL-Backup-Restore-Job/scripts/last-monday.ps1"
+                            & "sql-backup-restore-automation/scripts/last-monday.ps1"
                         '''
                     ).trim()
                     echo "Captured Output: ${result}"
@@ -134,7 +134,7 @@ pipeline {
             script{
                 echo "Lets Build the Environment ! "
                 dir("terraform"){
-                    git (url: 'git@github.com:sarowar-alam/sarowar.git',branch: 'main',credentialsId: 'YOUR_CREDENTIALS_ID_HERE')
+                    git (url: 'git@github.com:user-1/automation-repo.git',branch: 'main',credentialsId: 'jenkins-git-credentials')
                     
                     // Terraform apply
                     powershell """
@@ -207,7 +207,7 @@ pipeline {
             script{
                 echo "Lets Build the Environment ! "
                 dir("terraform"){
-                    git (url: 'git@github.com:sarowar-alam/sarowar.git',branch: 'main',credentialsId: 'YOUR_CREDENTIALS_ID_HERE')
+                    git (url: 'git@github.com:user-1/automation-repo.git',branch: 'main',credentialsId: 'jenkins-git-credentials')
                     
                     // Terraform apply
                     powershell """
@@ -335,7 +335,7 @@ pipeline {
                     echo "Script will be Executed ${DOWNLOAD_DB_REMOTE_SERVER}"
                     def result = bat(
                         script: """
-                            powershell -ExecutionPolicy Bypass -File "${DOWNLOAD_DB_REMOTE_SERVER}" -RemoteServer "${targetIp}" -Username "administrator" -S3BucketName "${DEST_BUCKET}" -S3Prefix "${DEST_PREFIX}" -DBName "${DB_NAME}" -RemoteDirectory "C:\\YOUR_REMOTE-DIR\\"
+                            powershell -ExecutionPolicy Bypass -File "${DOWNLOAD_DB_REMOTE_SERVER}" -RemoteServer "${targetIp}" -Username "administrator" -S3BucketName "${DEST_BUCKET}" -S3Prefix "${DEST_PREFIX}" -DBName "${DB_NAME}" -RemoteDirectory "C:\\DBBackups\\"
                         """,
                         returnStatus: true,  // Return exit code instead of stdout
                         label: "Downlaoding DB ${DB_NAME} in ${targetIp}"
@@ -373,10 +373,10 @@ pipeline {
                     def restore_db_with_sqlcmd = powershell(returnStatus: true, script: """
                         & '${RESTORE_DB_SQL_CMD}' -RemoteServerIP '${targetIp}' `
                                                 -Username 'administrator' `
-                                                -RemoteFolderPath 'C:\\YOUR_REMOTE-DIR' `
+                                                -RemoteFolderPath 'C:\\DBBackups' `
                                                 -FilePrefix '${DB_NAME}' `
                                                 -DatabaseName '${DB_NAME}'
-                    """)
+                    """
                     if (restore_db_with_sqlcmd != 0) {
                         error "PowerShell script failed with exit code: ${restore_db_with_sqlcmd}"
                     }
@@ -413,10 +413,10 @@ pipeline {
                     def restore_db_with_sqlcmd = powershell(returnStdout: true, script: """
                         & '${EXECUTE_DB_SQL_CMD}' -RemoteServerIP '${targetIp}' `
                                                 -Username 'administrator' `
-                                                -RemoteFolderPath 'C:\\YOUR_REMOTE-DIR' `
+                                                -RemoteFolderPath 'C:\\DBBackups' `
                                                 -SQLFilePath '${SQL_QUERY_FILE}' `
                                                 -DatabaseName '${DB_NAME}'
-                    """)
+                    """
 
                     echo "Raw test output: ${restore_db_with_sqlcmd}"
                     
@@ -428,17 +428,17 @@ pipeline {
                         error "PowerShell script failed - no output returned"
                     }
 
-                    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'YOUR_CREDENTIALS_ID_HERE', 
+                    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: 'sql-server-credentials', 
                     usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']])
                     {
                         def restore_db_with_sqlcmd_prod = powershell(returnStdout: true, script: """
                             & '${EXECUTE_DB_SQL_CMD_PROD}' -RemoteServerIP '${PROD_SQL_IP}' `
                                                     -Username "${USERNAME}" `
                                                     -Password (ConvertTo-SecureString '${PASSWORD}' -AsPlainText -Force) `
-                                                    -RemoteFolderPath 'C:\\YOUR_REMOTE-DIR' `
+                                                    -RemoteFolderPath 'C:\\DBBackups' `
                                                     -SQLFilePath '${SQL_QUERY_FILE}' `
                                                     -DatabaseName '${DB_NAME}'
-                        """)
+                        """
                         
                         echo "Raw production output: ${restore_db_with_sqlcmd_prod}"
                         
@@ -514,7 +514,7 @@ pipeline {
             script{
                 echo "Lets Destroy the Environment ! "
                 dir("terraform"){
-                    git (url: 'git@github.com:sarowar-alam/sarowar.git',branch: 'main',credentialsId: 'YOUR_CREDENTIALS_ID_HERE')
+                    git (url: 'git@github.com:user-1/automation-repo.git',branch: 'main',credentialsId: 'jenkins-git-credentials')
                     
                     // Terraform apply
                     powershell """
@@ -562,13 +562,13 @@ failure {
         try {
             withCredentials([[
                 $class: 'UsernamePasswordMultiBinding',
-                credentialsId: 'YOUR_CREDENTIALS_ID_HERE',
+                credentialsId: 'aws-ses-credentials',
                 usernameVariable: 'AWS_ACCESS_KEY_ID',
                 passwordVariable: 'AWS_SECRET_ACCESS_KEY'
             ]]) {
                 // Define recipients
-                def toRecipients = "'YOUR_NAME@YOUR_DOMAIN.COM'"
-                def ccRecipients = "'YOUR_NAME@YOUR_DOMAIN.COM'"
+                def toRecipients = "'user-1@company-a.com'"
+                def ccRecipients = "'user-2@company-a.com'"
                 
                 // Get error message
                 def errorMsg = currentBuild.rawBuild.getLog(100).findAll { 
@@ -585,7 +585,7 @@ import os
 
 def send_email_SES():
     AWS_REGION = 'us-east-1'
-    SENDER_EMAIL = 'DevOps_Jankins_Automation <noreply@YOUR_DOMAIN.COM>'
+    SENDER_EMAIL = 'DevOps_Automation <noreply@company-a.com>'
     TO_RECIPIENTS = [${toRecipients}]
     CC_RECIPIENTS = [${ccRecipients}]
     SUBJECT = 'FAILED: ${env.JOB_NAME.replace("'", "\\\\'")} #${env.BUILD_NUMBER}'
@@ -747,13 +747,13 @@ def extractTableOutputSimple(String powerShellOutput, String scriptType) {
 def sendResultsEmail(String testResults, String prodResults) {
     withCredentials([[
         $class: 'UsernamePasswordMultiBinding',
-        credentialsId: 'YOUR_CREDENTIALS_ID_HERE',
+        credentialsId: 'aws-ses-credentials',
         usernameVariable: 'AWS_ACCESS_KEY_ID',
         passwordVariable: 'AWS_SECRET_ACCESS_KEY'
     ]]) {
         // Define recipients
-        def toRecipients = "'YOUR_NAME@YOUR_DOMAIN.COM'"
-        def ccRecipients = "'YOUR_NAME@YOUR_DOMAIN.COM'"
+        def toRecipients = "'user-1@company-a.com'"
+        def ccRecipients = "'user-2@company-a.com'"
         
         // Parse the results into structured data
         def testTableData = parseTableData(testResults)
@@ -764,7 +764,7 @@ def sendResultsEmail(String testResults, String prodResults) {
         <html>
         <head>
             <style>
-                body { font-family: WPP, sans-serif; margin: 20px; background-color: #f5f5f5; }
+                body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
                 .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
                 .main-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
                 .main-table th, .main-table td { 
@@ -869,7 +869,7 @@ import os
 
 def send_email_SES():
     AWS_REGION = 'us-east-1'
-    SENDER_EMAIL = 'DevOps_Automation DB Restore <noreply@YOUR_DOMAIN.COM>'
+    SENDER_EMAIL = 'DevOps_Automation DB Restore <noreply@company-a.com>'
     TO_RECIPIENTS = [${toRecipients}]
     CC_RECIPIENTS = [${ccRecipients}]
     SUBJECT = 'Restore Test: Database ${env.SELECTED_DB} Triggered By: ${env.TRIGGERED_BY} | ${env.JOB_NAME.replace("'", "\\\\'")} #${env.BUILD_NUMBER}'
